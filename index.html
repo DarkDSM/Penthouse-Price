@@ -96,6 +96,68 @@
             outline: none;
         }
         
+        .counter-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .counter {
+            display: flex;
+            align-items: center;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: white;
+        }
+        
+        .counter-btn {
+            background-color: #f5f5f5;
+            border: none;
+            width: 40px;
+            height: 40px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .counter-btn:hover {
+            background-color: #e0e0e0;
+        }
+        
+        .counter-value {
+            width: 60px;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            padding: 10px 0;
+        }
+        
+        .food-option {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .food-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background-color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        
+        .food-btn.active {
+            background-color: #4a6491;
+            color: white;
+            border-color: #4a6491;
+        }
+        
         .result-item {
             margin-bottom: 20px;
             padding-bottom: 15px;
@@ -166,6 +228,10 @@
                 padding-right: 0;
                 margin-bottom: 30px;
             }
+            
+            .food-option {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
@@ -213,6 +279,24 @@
                         <option value="25000">20-30 personnes - 25 000 €</option>
                     </select>
                 </div>
+                
+                <div class="form-group">
+                    <label>Option nourriture :</label>
+                    <div class="food-option">
+                        <button class="food-btn" data-type="none">Aucune</button>
+                        <button class="food-btn active" data-type="standard">Standard (600€/pers)</button>
+                        <button class="food-btn" data-type="luxury">Luxueux (850€/pers)</button>
+                    </div>
+                    
+                    <div class="counter-group">
+                        <label for="food-people">Nombre de personnes pour la nourriture :</label>
+                        <div class="counter">
+                            <button class="counter-btn" id="decrease">-</button>
+                            <input type="number" class="counter-value" id="food-people" value="1" min="1" max="100">
+                            <button class="counter-btn" id="increase">+</button>
+                        </div>
+                    </div>
+                </div>
             </div>
             
             <div class="results">
@@ -233,6 +317,11 @@
                     <div class="result-value" id="price-people">3 000 €</div>
                 </div>
                 
+                <div class="result-item">
+                    <div class="result-label">Prix nourriture :</div>
+                    <div class="result-value" id="price-food">0 €</div>
+                </div>
+                
                 <div class="total-price" id="total-price">18 000 €</div>
                 
                 <div class="distribution">
@@ -248,7 +337,7 @@
                 </div>
                 
                 <div class="note">
-                    Les prix sont calculés en additionnant les trois composantes : durée + utilisation + personnes
+                    Les prix sont calculés en additionnant les quatre composantes : durée + utilisation + personnes + nourriture
                 </div>
             </div>
         </div>
@@ -259,17 +348,34 @@
         const durationSelect = document.getElementById('duration');
         const usageSelect = document.getElementById('usage');
         const peopleSelect = document.getElementById('people');
+        const foodBtns = document.querySelectorAll('.food-btn');
+        const foodPeopleInput = document.getElementById('food-people');
+        const decreaseBtn = document.getElementById('decrease');
+        const increaseBtn = document.getElementById('increase');
         
         const priceDuration = document.getElementById('price-duration');
         const priceUsage = document.getElementById('price-usage');
         const pricePeople = document.getElementById('price-people');
+        const priceFood = document.getElementById('price-food');
         const totalPrice = document.getElementById('total-price');
         const kyleShare = document.getElementById('kyle-share');
         const dynastyShare = document.getElementById('dynasty-share');
         
+        // Variables pour l'option nourriture
+        let foodType = 'standard'; // Par défaut Standard
+        let foodPeople = 1; // Par défaut 1 personne
+        
         // Fonction pour formater les nombres avec des espaces
         function formatPrice(price) {
             return new Intl.NumberFormat('fr-FR').format(price) + ' €';
+        }
+        
+        // Fonction pour calculer le prix de la nourriture
+        function calculateFoodPrice() {
+            if (foodType === 'none') return 0;
+            
+            const pricePerPerson = foodType === 'standard' ? 600 : 850;
+            return pricePerPerson * foodPeople;
         }
         
         // Fonction pour calculer le prix total
@@ -277,8 +383,9 @@
             const durationPrice = parseInt(durationSelect.value);
             const usagePrice = parseInt(usageSelect.value);
             const peoplePrice = parseInt(peopleSelect.value);
+            const foodPrice = calculateFoodPrice();
             
-            const total = durationPrice + usagePrice + peoplePrice;
+            const total = durationPrice + usagePrice + peoplePrice + foodPrice;
             const kyleAmount = total * 0.8;
             const dynastyAmount = total * 0.2;
             
@@ -286,10 +393,46 @@
             priceDuration.textContent = formatPrice(durationPrice);
             priceUsage.textContent = formatPrice(usagePrice);
             pricePeople.textContent = formatPrice(peoplePrice);
+            priceFood.textContent = formatPrice(foodPrice);
             totalPrice.textContent = formatPrice(total);
             kyleShare.textContent = formatPrice(kyleAmount);
             dynastyShare.textContent = formatPrice(dynastyAmount);
         }
+        
+        // Gestion des boutons de sélection de nourriture
+        foodBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                foodBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                foodType = btn.dataset.type;
+                calculateTotal();
+            });
+        });
+        
+        // Gestion du compteur de personnes pour la nourriture
+        decreaseBtn.addEventListener('click', () => {
+            if (foodPeople > 1) {
+                foodPeople--;
+                foodPeopleInput.value = foodPeople;
+                calculateTotal();
+            }
+        });
+        
+        increaseBtn.addEventListener('click', () => {
+            if (foodPeople < 100) {
+                foodPeople++;
+                foodPeopleInput.value = foodPeople;
+                calculateTotal();
+            }
+        });
+        
+        foodPeopleInput.addEventListener('input', () => {
+            const value = parseInt(foodPeopleInput.value);
+            if (value >= 1 && value <= 100) {
+                foodPeople = value;
+                calculateTotal();
+            }
+        });
         
         // Écouter les changements sur les sélecteurs
         durationSelect.addEventListener('change', calculateTotal);
